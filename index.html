@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>出門喵一下 🐾</title>
+  <style>
+    /* CSS 變數：預設採用女生粉紅主題 */
+    :root {
+      --bg-color: #FFF9E6;
+      --text-main: #5D4037;
+      --text-light: #8D6E63;
+      --primary-color: #F06292;
+      --border-color: #F8BBD0;
+      --btn-hover: #E91E63;
+      --card-bg: #FFFFFF;
+      --border-radius: 12px;
+    }
+    
+    /* 男生粉藍主題 */
+    body.theme-male {
+      --primary-color: #64B5F6;
+      --border-color: #BBDEFB;
+      --btn-hover: #42A5F5;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Helvetica Neue', Arial, '微軟正黑體', sans-serif;
+      margin: 0;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    
+    h1, h2, h3, h4 { margin: 0; }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    
+    .main-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      max-width: 750px;
+    }
+    
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      padding: 15px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border: 2px solid var(--border-color);
+      transition: border-color 0.3s;
+    }
+    
+    .cat-img {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 10px;
+      display: block;
+    }
+    
+    /* 緊湊型表單 (RWD) */
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .input-group {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 140px;
+    }
+    .input-group label {
+      font-weight: bold;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    
+    select, input[type="date"] {
+      width: 100%;
+      padding: 8px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--text-main);
+      box-sizing: border-box;
+      background-color: #FAFAFA;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    select:focus, input:focus { border-color: var(--primary-color); }
+    
+    button {
+      background-color: var(--primary-color);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      transition: background-color 0.3s, transform 0.1s;
+      padding: 10px;
+      width: 100%;
+      font-size: 15px;
+    }
+    button:hover { background-color: var(--btn-hover); }
+    button:active { transform: scale(0.98); }
+    
+    /* 迎賓 Modal */
+    #onboarding-modal {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255, 249, 230, 0.95);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: white;
+      padding: 25px;
+      border-radius: var(--border-radius);
+      width: 90%;
+      max-width: 350px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      border: 3px solid var(--primary-color);
+    }
+    
+    .hidden { display: none !important; }
+    
+    /* 警報區塊 */
+    .alert {
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-weight: bold;
+      font-size: 13px;
+    }
+    .error-alert { background-color: #FFEBEE; color: #C62828; }
+    .rain-alert { background-color: #E3F2FD; color: #1565C0; }
+    .temp-alert { background-color: #FFF3E0; color: #E65100; }
+    
+    /* 打包清單雙欄網格 */
+    .compact-list {
+      margin: 5px 0;
+      padding-left: 0;
+      list-style-type: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 4px 15px;
+      font-size: 13px;
+    }
+    .compact-list li::before {
+      content: "🐾";
+      margin-right: 5px;
+      font-size: 12px;
+    }
+    
+    /* 每日預覽小卡 */
+    .daily-cards {
+      display: flex;
+      overflow-x: auto;
+      gap: 8px;
+      padding-bottom: 5px;
+    }
+    .day-card {
+      min-width: 60px;
+      background: #FFF9E6;
+      border-radius: 8px;
+      padding: 6px;
+      text-align: center;
+      border: 1px solid var(--border-color);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Base64 SVG Cat Mascot (used in Modal) -->
+  <div id="onboarding-modal" class="hidden">
+    <div class="modal-content">
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgZmlsbD0iI0ZGQjM0NyIvPjxwb2x5Z29uIHBvaW50cz0iMjAsMjAgNDAsMzAgMzAsNTAiIGZpbGw9IiNGRkIzNDciLz48cG9seWdvbiBwb2ludHM9IjgwLDIwIDYwLDMwIDcwLDUwIiBmaWxsPSIjRkZCMzQ3Ii8+PGNpcmNsZSBjeD0iMzUiIGN5PSI0NSIgcj0iNSIgZmlsbD0iIzVENDAzNyIvPjxjaXJjbGUgY3g9IjY1IiBjeT0iNDUiIHI9IjUiIGZpbGw9IiM1RDQwMzciLz48cGF0aCBkPSJNNTAgNTUgQzQ1IDYwIDQwIDYwIDQwIDU1IE01MCA1NSBDNTUgNjAgNjAgNjAgNjAgNTUiIHN0cm9rZT0iIzVENDAzNyIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIi8+PC9zdmc+" class="cat-img" alt="喵">
+      <h2 style="color: var(--primary-color);">😽 喵～初次見面！</h2>
+      <p style="color: var(--text-light); font-weight:bold; font-size:14px;">我是氣象喵管家 🐾 請先告訴本喵：</p>
+      
+      <div style="text-align:left; margin-bottom:10px;">
+        <label style="font-weight:bold; font-size:13px; display:block; margin-bottom:4px;">🌍 我現在的座標在...</label>
+        <select id="onboard-location">
+          <option value="" disabled selected>請選擇縣市</option>
+        </select>
+      </div>
+
+      <div style="text-align:left; margin-bottom:15px;">
+        <label style="font-weight:bold; font-size:13px; display:block; margin-bottom:4px;">🙋 我是...</label>
+        <select id="onboard-gender">
+          <option value="" disabled selected>請選擇性別</option>
+          <option value="male">男生 🙋‍♂️ (粉藍主題)</option>
+          <option value="female">女生 🙋‍♀️ (粉紅主題)</option>
+        </select>
+      </div>
+
+      <button onclick="saveOnboarding()">🐾 記住設定，開始體驗！</button>
+    </div>
+  </div>
+
+  <div class="header">
+    <h1 style="color: var(--primary-color); font-size: 24px; margin-bottom: 2px;">出門喵一下 🐾</h1>
+    <p style="color: var(--text-light); margin: 0; font-weight:bold; font-size: 13px;">你的專屬天氣與打包貓管家</p>
+  </div>
+
+  <div class="main-wrapper">
+    <!-- 模組 B：日常天氣與穿搭 -->
+    <div class="card" id="daily-card">
+      <div class="input-row">
+        <div class="input-group">
+          <label>📍 座標：</label>
+          <select id="daily-location" onchange="updateDailySettings()"></select>
+        </div>
+        <div class="input-group">
+          <label>✨ 穿搭：</label>
+          <select id="daily-gender" onchange="updateDailySettings()">
+            <option value="male">男生 🙋‍♂️</option>
+            <option value="female">女生 🙋‍♀️</option>
+          </select>
+        </div>
+      </div>
+      
+      <div id="daily-error" class="alert error-alert hidden">
+        🐾 喵嗚，天氣連線失敗！ <button onclick="fetchDailyWeather()" style="width:auto; padding:4px 8px; font-size:12px; margin-left:10px;">🔄 重試</button>
+      </div>
+
+      <div id="daily-content">
+        <div style="display:flex; align-items:center; justify-content:center; gap: 15px; margin-bottom: 5px;">
+          <h2 id="daily-temp" style="font-size: 30px; color: var(--primary-color);">--°C</h2>
+          <p id="daily-desc" style="font-size: 15px; font-weight:bold; color: var(--text-light); margin: 0;">觀測中...</p>
+        </div>
+        
+        <div id="daily-rain-alert" class="alert rain-alert hidden"></div>
+        <div id="daily-temp-alert" class="alert temp-alert hidden"></div>
+
+        <div style="background:#FFF9E6; border-radius:8px; padding:10px; border: 1px solid var(--border-color);">
+          <h3 style="margin: 0 0 4px 0; color: var(--primary-color); font-size: 14px;">👗 今日穿搭建議：</h3>
+          <p id="daily-outfit" style="margin:0; font-weight:bold; line-height:1.4; font-size: 13px;">正在思考穿什麼喵...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 模組 C：喵星人打包顧問 -->
+    <div class="card">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+        <h2 style="color: var(--primary-color); font-size: 18px;">🧳 喵星人打包顧問</h2>
+        <span style="color: var(--text-light); font-weight:bold; font-size: 12px;">精算該帶幾件衣服！🐾</span>
+      </div>
+      
+      <div class="input-row">
+        <div class="input-group">
+          <label>🌍 目的地</label>
+          <select id="travel-location"></select>
+        </div>
+        <div class="input-group">
+          <label>📅 出發日</label>
+          <input type="date" id="travel-date" onchange="updateTravelDaysLimit()">
+        </div>
+        <div class="input-group" style="min-width: 90px;">
+          <label>🎒 天數</label>
+          <select id="travel-days"></select>
+        </div>
+      </div>
+      
+      <button onclick="fetchTravelWeather()">✨ 產出專屬打包清單</button>
+
+      <div id="travel-error" class="alert error-alert hidden" style="margin-top: 10px;">
+        🛑 喵嗚，無法取得氣象資料，請稍後重試。<button onclick="fetchTravelWeather()" style="width:auto; padding:4px 8px; font-size:12px; margin-left:10px;">🔄 重試</button>
+      </div>
+
+      <div id="travel-result" class="hidden" style="margin-top: 10px; border-top: 2px dashed var(--border-color); padding-top: 10px;">
+        <p id="travel-intro" style="font-weight:bold; color: var(--text-light); font-size: 13px; margin: 0 0 8px 0; background: #FFF9E6; padding: 6px; border-radius: 6px; border: 1px solid var(--border-color);"></p>
+        
+        <ul id="packing-list" class="compact-list"></ul>
+        
+        <h4 style="color: var(--primary-color); margin: 8px 0 4px 0; font-size: 13px;">🌤️ 逐日天氣預覽</h4>
+        <div id="travel-daily-forecast" class="daily-cards"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 資料字典
+    const locationData = {
+      "臺北市": {lat:25.03, lon:121.56}, "新北市": {lat:25.01, lon:121.46},
+      "基隆市": {lat:25.12, lon:121.74}, "桃園市": {lat:24.99, lon:121.30},
+      "新竹市": {lat:24.81, lon:120.96}, "新竹縣": {lat:24.82, lon:121.01},
+      "苗栗縣": {lat:24.56, lon:120.82}, "臺中市": {lat:24.14, lon:120.68},
+      "彰化縣": {lat:24.07, lon:120.54}, "南投縣": {lat:23.90, lon:120.69},
+      "雲林縣": {lat:23.70, lon:120.54}, "嘉義市": {lat:23.48, lon:120.44},
+      "嘉義縣": {lat:23.45, lon:120.25}, "臺南市": {lat:23.00, lon:120.22},
+      "高雄市": {lat:22.62, lon:120.31}, "屏東縣": {lat:22.66, lon:120.48},
+      "宜蘭縣": {lat:24.75, lon:121.75}, "花蓮縣": {lat:23.98, lon:121.60},
+      "臺東縣": {lat:22.75, lon:121.14}, "澎湖縣": {lat:23.57, lon:119.58},
+      "金門縣": {lat:24.43, lon:118.31}, "連江縣": {lat:26.15, lon:119.95}
+    };
+
+    const wmoCodes = {
+      0: "晴天 ☀️", 1: "晴時多雲 🌤️", 2: "多雲 ⛅", 3: "陰天 ☁️",
+      45: "霧 🌫️", 48: "霧 🌫️", 51: "毛毛雨 🌧️", 53: "毛毛雨 🌧️", 55: "毛毛雨 🌧️",
+      61: "陣雨 🌧️", 63: "雨天 🌧️", 65: "大雨 🌧️", 71: "下雪 ❄️", 80: "陣雨 🌧️", 95: "雷雨 ⛈️", 99: "大雷雨 ⛈️"
+    };
+
+    // 取得本地 YYYY-MM-DD
+    function getLocalDateString(dateObj) {
+      const tzOffset = dateObj.getTimezoneOffset() * 60000;
+      return (new Date(dateObj.getTime() - tzOffset)).toISOString().split('T')[0];
+    }
+    const todayStr = getLocalDateString(new Date());
+
+    function initApp() {
+      populateDropdowns();
+      const loc = localStorage.getItem('meow_location');
+      const gen = localStorage.getItem('meow_gender');
+      
+      initDateConstraints(); 
+
+      if (!loc || !gen) {
+        document.getElementById('onboarding-modal').classList.remove('hidden');
+      } else {
+        document.getElementById('daily-location').value = loc;
+        document.getElementById('daily-gender').value = gen;
+        applyTheme(gen);
+        fetchDailyWeather();
+      }
+    }
+
+    function populateDropdowns() {
+      const locs = Object.keys(locationData);
+      const targets = ['onboard-location', 'daily-location', 'travel-location'];
+      targets.forEach(id => {
+        const select = document.getElementById(id);
+        locs.forEach(l => {
+          const opt = document.createElement('option');
+          opt.value = l; opt.textContent = l;
+          select.appendChild(opt);
+        });
+      });
+    }
+
+    // 模組 C：動態鎖定日曆與天數
+    function initDateConstraints() {
+      const maxDate = new Date();
+      maxDate.setDate(maxDate.getDate() + 14); 
+      
+      const dateInput = document.getElementById('travel-date');
+      dateInput.min = todayStr;
+      dateInput.max = getLocalDateString(maxDate);
+      dateInput.value = todayStr;
+      updateTravelDaysLimit();
+    }
+
+    function updateTravelDaysLimit() {
+      const dateInput = document.getElementById('travel-date').value;
+      const daysSelect = document.getElementById('travel-days');
+      if(!dateInput) return;
+      
+      const selectedDate = new Date(dateInput);
+      const todayDate = new Date(todayStr);
+      const diffTime = Math.abs(selectedDate - todayDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      let maxDays = 15 - diffDays;
+      if (maxDays < 1) maxDays = 1;
+      
+      const currentVal = parseInt(daysSelect.value) || 1;
+      daysSelect.innerHTML = '';
+      for(let i = 1; i <= maxDays; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = i + ' 天';
+        daysSelect.appendChild(opt);
+      }
+      daysSelect.value = (currentVal > maxDays) ? maxDays : currentVal;
+    }
+
+    // 主題色切換
+    function applyTheme(gender) {
+      if (gender === 'male') {
+        document.body.classList.add('theme-male');
+      } else {
+        document.body.classList.remove('theme-male');
+      }
+    }
+
+    // 模組 A：儲存設定
+    function saveOnboarding() {
+      const loc = document.getElementById('onboard-location').value;
+      const gen = document.getElementById('onboard-gender').value;
+      if (!loc || !gen) {
+        alert("喵嗚～請先選擇所在地和性別喔！🐾");
+        return;
+      }
+      localStorage.setItem('meow_location', loc);
+      localStorage.setItem('meow_gender', gen);
+      document.getElementById('onboarding-modal').classList.add('hidden');
+      
+      document.getElementById('daily-location').value = loc;
+      document.getElementById('daily-gender').value = gen;
+      applyTheme(gen);
+      fetchDailyWeather();
+    }
+
+    // 模組 B：動態更新
+    function updateDailySettings() {
+      const loc = document.getElementById('daily-location').value;
+      const gen = document.getElementById('daily-gender').value;
+      localStorage.setItem('meow_location', loc);
+      localStorage.setItem('meow_gender', gen);
+      applyTheme(gen);
+      fetchDailyWeather();
+    }
+
+    function buildApiUrl(lat, lon, days) {
+        return `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,apparent_temperature_max,apparent_temperature_min&timezone=Asia%2FTaipei&forecast_days=${days}`;
+    }
+
+    // 模組 B：日常天氣 Fetch
+    async function fetchDailyWeather() {
+      document.getElementById('daily-error').classList.add('hidden');
+      document.getElementById('daily-content').classList.remove('hidden');
+      document.getElementById('daily-temp').innerText = "🐾";
+      document.getElementById('daily-desc').innerText = "觀測中...";
+      
+      const loc = document.getElementById('daily-location').value;
+      const gen = document.getElementById('daily-gender').value;
+      const coords = locationData[loc];
+      
+      try {
+        const res = await fetch(buildApiUrl(coords.lat, coords.lon, 1));
+        if(!res.ok) throw new Error("網路連線錯誤");
+        const data = await res.json();
+        
+        const maxTemp = Math.round(data.daily.apparent_temperature_max[0]);
+        const minTemp = Math.round(data.daily.apparent_temperature_min[0]);
+        const avgTemp = (maxTemp + minTemp) / 2;
+        const code = data.daily.weathercode[0];
+        const diff = maxTemp - minTemp;
+        
+        document.getElementById('daily-temp').innerText = `${minTemp}° ~ ${maxTemp}°C`;
+        document.getElementById('daily-desc').innerText = wmoCodes[code] || "未知天氣 🐈";
+        
+        const rainAlert = document.getElementById('daily-rain-alert');
+        if (code >= 51) {
+          rainAlert.innerHTML = "☔ 降雨機率高，請攜帶折疊傘！";
+          rainAlert.classList.remove('hidden');
+        } else { rainAlert.classList.add('hidden'); }
+        
+        const tempAlert = document.getElementById('daily-temp-alert');
+        if (diff >= 8) {
+          tempAlert.innerHTML = "🧅 溫差達 8 度以上，建議洋蔥式穿脫！";
+          tempAlert.classList.remove('hidden');
+        } else { tempAlert.classList.add('hidden'); }
+        
+        document.getElementById('daily-outfit').innerHTML = getDailyOutfit(avgTemp, gen);
+        
+      } catch (err) {
+        document.getElementById('daily-content').classList.add('hidden');
+        document.getElementById('daily-error').classList.remove('hidden');
+      }
+    }
+
+    // 穿搭決策矩陣
+    function getDailyOutfit(temp, gender) {
+      if (temp >= 28) {
+        return gender === 'male' 
+          ? "短袖與短褲透氣，出門記得多喝水喔！" 
+          : "短袖或無袖，配涼爽短裙/短褲，記得防曬！";
+      } else if (temp >= 23) {
+        return gender === 'male'
+          ? "短袖或薄長袖配休閒長褲，輕鬆出門！"
+          : "薄長袖或雪紡衫搭長裙/寬褲，美美出門！";
+      } else if (temp >= 17) {
+        return gender === 'male'
+          ? "薄長袖和長褲，記得帶件夾克或薄風衣！"
+          : "長袖針織衫和中長裙/長褲，帶件針織小外套！";
+      } else {
+        return gender === 'male'
+          ? "發熱衣、厚毛衣和保暖褲，加厚羽絨外套！"
+          : "發熱衣、厚毛衣和保暖褲襪，加羽絨大衣！";
+      }
+    }
+
+    // 模組 C：旅遊天氣與精算 Fetch
+    async function fetchTravelWeather() {
+      document.getElementById('travel-error').classList.add('hidden');
+      const resultDiv = document.getElementById('travel-result');
+      resultDiv.classList.add('hidden');
+      
+      const loc = document.getElementById('travel-location').value;
+      const startDateStr = document.getElementById('travel-date').value;
+      const days = parseInt(document.getElementById('travel-days').value);
+      const gender = localStorage.getItem('meow_gender') || 'female';
+      
+      if(!loc || !startDateStr || !days) return;
+      
+      const coords = locationData[loc];
+      const submitBtn = document.querySelector('button[onclick="fetchTravelWeather()"]');
+      const originalText = submitBtn.innerText;
+      submitBtn.innerText = "🐾 貓草計算中...";
+      
+      try {
+        const res = await fetch(buildApiUrl(coords.lat, coords.lon, 16));
+        if(!res.ok) throw new Error("API連線失敗");
+        const data = await res.json();
+        
+        const startIndex = data.daily.time.indexOf(startDateStr);
+        if (startIndex === -1) throw new Error("超出預測範圍");
+        
+        let hotDays = 0, coldDays = 0;
+        let hasRain = false, maxDiff = 0, extremeMin = 100, extremeMax = -100;
+        const forecastHTML = [];
+        
+        for (let i = 0; i < days; i++) {
+          const idx = startIndex + i;
+          if (idx >= data.daily.time.length) break;
+          
+          const maxT = Math.round(data.daily.apparent_temperature_max[idx]);
+          const minT = Math.round(data.daily.apparent_temperature_min[idx]);
+          const avgT = (maxT + minT) / 2;
+          const code = data.daily.weathercode[idx];
+          const diff = maxT - minT;
+          
+          if (avgT >= 24) hotDays++; else coldDays++;
+          if (code >= 51) hasRain = true;
+          if (diff > maxDiff) maxDiff = diff;
+          if (minT < extremeMin) extremeMin = minT;
+          if (maxT > extremeMax) extremeMax = maxT;
+          
+          const dateLabel = data.daily.time[idx].slice(5).replace("-", "/");
+          let emoji = '☁️';
+          if (code >= 51) emoji = '🌧️';
+          else if (code <= 2) emoji = '☀️';
+          
+          forecastHTML.push(`
+            <div class="day-card">
+              <div style="font-size:11px; font-weight:bold; color:var(--text-main);">${dateLabel}</div>
+              <div style="font-size:20px; margin:2px 0;">${emoji}</div>
+              <div style="font-size:11px; font-weight:bold; color:var(--text-light);">${minT}° - ${maxT}°</div>
+            </div>
+          `);
+        }
+        
+        generatePackingList(days, hotDays, coldDays, hasRain, maxDiff, extremeMin, extremeMax, gender);
+        document.getElementById('travel-daily-forecast').innerHTML = forecastHTML.join('');
+        resultDiv.classList.remove('hidden');
+        
+      } catch (err) {
+        document.getElementById('travel-error').classList.remove('hidden');
+      } finally {
+        submitBtn.innerText = originalText;
+      }
+    }
+
+    // 模組 C：行李精算演算法
+    function generatePackingList(days, hotDays, coldDays, hasRain, maxDiff, extremeMin, extremeMax, gender) {
+      const isMale = (gender === 'male');
+      
+      let tShirt = hotDays;
+      let longShirt = coldDays;
+      if (hotDays >= coldDays) tShirt++; else longShirt++;
+      
+      let pants = Math.ceil(days / 2);
+      let shorts = 0;
+      if (extremeMax > 28) {
+        shorts = (days >= 4) ? 2 : 1; 
+        pants = Math.max(1, pants - shorts);
+      }
+      
+      let thickCoat = (extremeMin <= 16) ? 1 : 0;
+      let thinCoat = (maxDiff >= 8 || (16 < extremeMin && extremeMin <= 23)) ? 1 : 0;
+      const underwear = days + 1;
+      const pj = (days <= 3) ? 1 : 2;
+      
+      let intro = "";
+      if (hotDays === days) intro = "天氣熱☀️ 準備短袖為主！";
+      else if (coldDays === days) intro = "冷颼颼🥶 保暖長袖不能少！";
+      else intro = "氣溫多變🌡️ 混搭長短袖隨時替換！";
+      if (maxDiff >= 8) intro += " 溫差大，記得洋蔥穿脫🧅。";
+      if (hasRain) intro += " 會下雨☔ 折疊傘別忘記！";
+      else intro += " 沒下雨好幸運，安心出發🕶️。";
+      
+      document.getElementById('travel-intro').innerText = intro;
+      
+      const ul = document.getElementById('packing-list');
+      ul.innerHTML = "";
+      const addLi = (text) => { const li = document.createElement('li'); li.innerHTML = text; ul.appendChild(li); };
+      
+      addLi(`短袖上衣：<b>${tShirt} 件</b>`);
+      addLi(`長袖上衣：<b>${longShirt} 件</b> (含備用)`);
+      if(isMale) {
+        addLi(`休閒長褲：<b>${pants} 件</b>`);
+        if (shorts > 0) addLi(`透氣短褲：<b>${shorts} 件</b>`);
+      } else {
+        addLi(`長褲/長裙：<b>${pants} 件</b>`);
+        if (shorts > 0) addLi(`短褲/短裙：<b>${shorts} 件</b>`);
+      }
+      if (thickCoat > 0) addLi(`厚羽絨外套：<b>${thickCoat} 件</b>`);
+      if (thinCoat > 0) addLi(`薄外套/罩衫：<b>${thinCoat} 件</b>`);
+      addLi(`內外衣襪：<b>${underwear} 套</b>`);
+      addLi(`舒適睡衣：<b>${pj} 套</b>`);
+      if (hasRain) addLi(`必備配件：<b>折疊雨傘 1 把</b>`);
+    }
+
+    window.onload = initApp;
+  </script>
+</body>
+</html>
